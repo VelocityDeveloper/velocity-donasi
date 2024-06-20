@@ -1,0 +1,21 @@
+.donasi-progress {
+    height: 7px !important;
+}
+
+.vdd-share-button {
+	border: 0 !important;
+	font-size: 18px !important;
+	width: 37px;
+	text-align: center;
+	color: #fff !important;
+	line-height: 20px;
+	padding: 8px 0;
+}
+.vdd-x-twitter {background-color:#000000 !important;}
+.vdd-facebook {background-color:#4267B2 !important;}
+.vdd-whatsapp {background-color:#1B9912 !important;}
+.vdd-pinterest {background-color:#E6001A !important;}
+.vdd-linkedin {background-color:#0077B7 !important;}
+.vdd-email {background-color:#FF6600 !important;}
+.vdd-telegram {background-color:#2481CC !important;}
+.vdd-share-button:hover {background-color:#444444 !important;}
