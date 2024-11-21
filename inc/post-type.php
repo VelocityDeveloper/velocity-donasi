@@ -157,3 +157,35 @@ function donasi_masuk_custom_columns_data($column, $post_id) {
     }
 }
 add_action('manage_posts_custom_column', 'donasi_masuk_custom_columns_data', 10, 2);
+
+
+// Hapus donasi-masuk jika donasi dihapus
+function delete_related_donasi_masuk($post_id) {
+    // Periksa apakah post type yang dihapus adalah 'donasi'
+    $post_type = get_post_type($post_id);
+    if ($post_type !== 'donasi') {
+        return;
+    }
+
+    // Query semua post type 'donasi-masuk' yang memiliki post meta 'donasi_id' sama dengan $post_id
+    $related_posts = get_posts([
+        'post_type'  => 'donasi-masuk',
+        'meta_query' => [
+            [
+                'key'   => 'donasi_id',
+                'value' => $post_id,
+                'compare' => '=',
+            ],
+        ],
+        'fields' => 'ids', // Hanya ambil ID post
+        'posts_per_page' => -1,
+    ]);
+
+    // Hapus semua post terkait
+    if (!empty($related_posts)) {
+        foreach ($related_posts as $related_post_id) {
+            wp_delete_post($related_post_id, true); // true untuk menghapus secara permanen
+        }
+    }
+}
+add_action('before_delete_post', 'delete_related_donasi_masuk');
