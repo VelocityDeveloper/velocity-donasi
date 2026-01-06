@@ -14,6 +14,19 @@ if(!function_exists('velocitydonasi_option')) {
 
         $option_value = get_theme_mod($option_name,$default);
 
+        // Normalize stored values that might be JSON/serialized strings (from Customizer repeater).
+        if (is_string($option_value)) {
+            $maybe_unserialized = maybe_unserialize($option_value);
+            if ($maybe_unserialized !== $option_value) {
+                $option_value = $maybe_unserialized;
+            } elseif (isset($option_value[0]) && ($option_value[0] === '{' || $option_value[0] === '[')) {
+                $decoded = json_decode($option_value, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $option_value = $decoded;
+                }
+            }
+        }
+
         return $option_value;
 
     }

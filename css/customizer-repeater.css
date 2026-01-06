@@ -1,0 +1,111 @@
+.velocity-repeater-control .velocity-repeater {
+    border: none;
+    padding: 0;
+    background: transparent;
+}
+
+.velocity-repeater-control .velocity-repeater-items {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.velocity-repeater-control .velocity-repeater-item {
+    border: 1px solid #d5d5d5;
+    border-radius: 4px;
+    background: #fff;
+    overflow: hidden;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.04);
+}
+
+.velocity-repeater-control .velocity-repeater-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    justify-content: space-between;
+    background: #f6f7f7;
+    border: 0;
+    border-bottom: 1px solid #e2e4e7;
+    padding: 12px 14px;
+    cursor: pointer;
+    color: #1d2327;
+}
+
+.velocity-repeater-control .velocity-repeater-toggle:focus {
+    outline: 2px solid #2271b1;
+    outline-offset: -2px;
+}
+
+.velocity-repeater-control .velocity-repeater-item-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 180px;
+}
+
+.velocity-repeater-control .velocity-repeater-toggle-icon {
+    width: 6px;
+    height: 6px;
+    border-right: 2px solid #555;
+    border-bottom: 2px solid #555;
+    transform: rotate(45deg);
+    transition: transform 0.2s ease;
+}
+
+.velocity-repeater-control .velocity-repeater-item.is-collapsed .velocity-repeater-toggle-icon {
+    transform: rotate(-45deg);
+}
+
+.velocity-repeater-control .velocity-repeater-item-body {
+    display: block;
+    padding: 12px 14px 14px;
+    background: #fff;
+}
+
+.velocity-repeater-control .velocity-repeater-item.is-collapsed .velocity-repeater-item-body {
+    display: none;
+}
+
+.velocity-repeater-control .velocity-repeater-field {
+    display: block;
+    margin-bottom: 10px;
+}
+
+.velocity-repeater-control .velocity-repeater-field:last-child {
+    margin-bottom: 0;
+}
+
+.velocity-repeater-control .velocity-repeater-field-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.velocity-repeater-control .velocity-repeater-field input,
+.velocity-repeater-control .velocity-repeater-field select,
+.velocity-repeater-control .velocity-repeater-field textarea {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.velocity-repeater-control .velocity-repeater-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.velocity-repeater-control .velocity-repeater-add {
+    width: auto;
+    min-width: 120px;
+}
+
+.velocity-repeater-control .velocity-repeater-remove {
+    background: #dc3232 !important;
+    border-color: #dc3232 !important;
+    color: #fff !important;
+    box-shadow: none !important;
+}
