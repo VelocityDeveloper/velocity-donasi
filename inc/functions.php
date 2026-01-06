@@ -433,3 +433,33 @@ function tampilkan_daftar_donatur($donasi_id) {
     }
     echo '</ul>';
 }
+
+/**
+ * Update status donasi saat callback Duitku diterima.
+ */
+function velocity_donasi_duitku_callback_handler($payload) {
+    if (empty($payload['merchantOrderId'])) {
+        return;
+    }
+
+    $invoice = sanitize_text_field($payload['merchantOrderId']);
+    $reference = isset($payload['reference']) ? sanitize_text_field($payload['reference']) : '';
+    $result_code = isset($payload['resultCode']) ? sanitize_text_field($payload['resultCode']) : '';
+    $payment_code = isset($payload['paymentCode']) ? sanitize_text_field($payload['paymentCode']) : '';
+    $amount = isset($payload['amount']) ? sanitize_text_field($payload['amount']) : '';
+
+    $donasi = get_page_by_title($invoice, OBJECT, 'donasi-masuk');
+    if (!$donasi) {
+        return;
+    }
+
+    $status = $result_code === '00' ? 'Sukses' : 'Pending';
+
+    update_post_meta($donasi->ID, 'status', $status);
+    update_post_meta($donasi->ID, 'duitku_reference', $reference);
+    update_post_meta($donasi->ID, 'duitku_result_code', $result_code);
+    update_post_meta($donasi->ID, 'duitku_payment_code', $payment_code);
+    update_post_meta($donasi->ID, 'duitku_amount', $amount);
+    update_post_meta($donasi->ID, 'metode_bayar', 'duitku');
+}
+add_action('velocity_duitku_callback', 'velocity_donasi_duitku_callback_handler', 10, 1);

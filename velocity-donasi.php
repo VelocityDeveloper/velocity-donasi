@@ -50,7 +50,8 @@ if (!defined('VELOCITY_DONASI_DIR_URI')) {
 // Load everything
 $includes = [
     'inc/lib/cmb2/init.php',
-    'inc/ajax.php',
+    //'inc/ajax.php',
+    'inc/rest.php',
     'inc/meta-box.php',
     'inc/functions.php',
     'inc/shortcodes.php',
@@ -70,6 +71,10 @@ function velocity_donasi_scripts() {
     }
     wp_enqueue_style( 'vdonasi-custom-style', VELOCITY_DONASI_DIR_URI . 'css/donasi.css' );
     wp_enqueue_script( 'vdonasi-js', VELOCITY_DONASI_DIR_URI . 'js/donasi.js', array( 'jquery' ), null, true );
-    wp_localize_script( 'vdonasi-js', 'vdonasi_ajax_object', array( 'ajax_url' => admin_url( 'admin-ajax.php' ) ) );
+    wp_localize_script( 'vdonasi-js', 'vdonasi_api', array(
+        'ajax_url' => admin_url( 'admin-ajax.php' ),
+        'rest_url' => esc_url_raw( rest_url( 'velocity-donasi/v1/submit' ) ),
+        'rest_nonce' => wp_create_nonce( 'wp_rest' ),
+    ) );
 }
 add_action( 'wp_enqueue_scripts', 'velocity_donasi_scripts' );

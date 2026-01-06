@@ -21,20 +21,22 @@ jQuery(function($) {
             var captc = 1;
         }
         if(captc){
-          var datas = $('.form-donasi').serialize();
+            var datas = $('.form-donasi').serialize();
             $(".loadd").html('<span class="ms-1 spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
-            $.ajax({
-                type: "POST",
-                data: "action=submitdonasi&"+datas,
-                url: vdonasi_ajax_object.ajax_url,
-                success:function(data) {
-                    $(".hasil-donasi").html('<div class="col-12 mx-0">'+data+'</div>');
-                    /*
-                    setTimeout(function() {
-                        window.location.reload();
-                    }, 4000);
-                    */
-                }
+            var payload = datas + '&g-recaptcha-response=' + encodeURIComponent(captc);
+            fetch(vdonasi_api.rest_url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    'X-WP-Nonce': vdonasi_api.rest_nonce
+                },
+                body: payload
+            }).then(function(response){ return response.json(); }).then(function(res){
+                $(".hasil-donasi").html('<div class="col-12 mx-0">'+(res.html || '')+'</div>');
+                $(".loadd").html('');
+            }).catch(function(){
+                $(".hasil-donasi").html('<div class="col-12 mx-0"><div class="alert alert-danger">Gagal, coba lagi.</div></div>');
+                $(".loadd").html('');
             });
         } else {
             alert('Silahkan Isi Captcha!');

@@ -165,12 +165,19 @@ function velocity_donasi_button($atts) {
                             echo '<input type="number" class="form-control nominal-donasi" value="'.$defaultnominal.'" min="10000" required>';
                             echo '<small>minimal 10000</small>';
                         echo '</div>';
+                        $duitku_active = class_exists('Velocity_Addons_Duitku') && method_exists('Velocity_Addons_Duitku', 'is_active') && Velocity_Addons_Duitku::is_active();
                         echo '<div class="mb-3">';
                             echo '<label class="mb-1 fw-bold">Pilih Pembayaran</label>';
                             echo '<div class="form-check">';
                                 echo '<input class="form-check-input pilih-bayar" type="radio" name="bayar" id="paymentBank" value="bank" required>';
-                                echo '<label class="form-check-label" for="paymentBank">Bank</label>';
+                                echo '<label class="form-check-label" for="paymentBank">Bank Transfer</label>';
                             echo '</div>';
+                            if ($duitku_active) {
+                                echo '<div class="form-check">';
+                                    echo '<input class="form-check-input pilih-bayar" type="radio" name="bayar" id="paymentDuitku" value="duitku" required>';
+                                    echo '<label class="form-check-label" for="paymentDuitku">Payment Gateway (Duitku)</label>';
+                                echo '</div>';
+                            }
                             echo '<div id="bankOptions" style="display: none;">';
                                 $databank = getBankDonasi();
                                 if($databank){
