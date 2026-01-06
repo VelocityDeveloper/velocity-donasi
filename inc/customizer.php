@@ -184,6 +184,7 @@ function velocity_donasi_bank_choices() {
         'maybank'    => esc_html__('Maybank', 'velocity-donasi'),
         'danamon'    => esc_html__('Danamon', 'velocity-donasi'),
         'panin'      => esc_html__('Bank Panin', 'velocity-donasi'),
+        'seabank'    => esc_html__('SeaBank', 'velocity-donasi'),
     ];
 }
 
