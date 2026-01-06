@@ -1,0 +1,229 @@
+.velocity-donasi-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 10px 0;
+}
+
+.velocity-field {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.velocity-field label {
+    font-weight: 600;
+    color: #111;
+}
+
+.velocity-field small {
+    grid-column: 2 / 3;
+    color: #55606d;
+}
+
+.velocity-inline {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 10px;
+    align-items: center;
+}
+
+.velocity-inline .prefix,
+.velocity-inline .suffix {
+    font-size: 12px;
+    color: #5f6b79;
+    white-space: nowrap;
+}
+
+.velocity-inline input {
+    width: 100%;
+}
+
+.velocity-update-header {
+    margin: 12px 0 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.velocity-update-header h4 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: #111;
+}
+
+.velocity-update-wrapper {
+    display: grid;
+    gap: 12px;
+}
+
+.velocity-update-row {
+    border: 1px solid #dfe3e8;
+    border-radius: 10px;
+    padding: 14px;
+    background: #fff;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+}
+
+.velocity-update-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.velocity-repeater-actions {
+    padding-top: 10px;
+    margin-top: 20px;
+    text-align: right;
+    border-top: 1px solid rgba(0,0,0,0.1);
+}
+
+.velocity-repeater-actions .velocity-remove-update {
+    color: #c62828;
+    font-weight: 600;
+    text-decoration: none;
+    padding: 5px 10px;
+    border: 1px solid;
+    border-radius: 3px;
+        display: inline-block;
+}
+
+.velocity-repeater-toggle {
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 700;
+    color: #111;
+    cursor: pointer;
+}
+
+.velocity-repeater-chevron {
+    width: 10px;
+    height: 10px;
+    border-right: 2px solid #5f6b79;
+    border-bottom: 2px solid #5f6b79;
+    transform: rotate(45deg);
+    transition: transform 0.2s ease;
+}
+
+.velocity-update-row.is-open .velocity-repeater-chevron {
+    transform: rotate(225deg);
+}
+
+.velocity-update-body {
+    display: none;
+    margin-top: 10px;
+    padding-top: 15px;
+    border-top: 1px solid #ecf0f3;
+}
+
+.velocity-update-row.is-open .velocity-update-body {
+    display: block;
+}
+
+.velocity-update-row .row-actions {
+    text-align: right;
+    margin-top: 8px;
+}
+
+.velocity-update-row input,
+.velocity-update-row textarea,
+.velocity-field input,
+.velocity-field select {
+    width: 100%;
+    border: 1px solid #d3d8de;
+    border-radius: 6px;
+    padding: 5px 10px;
+    background: #fbfbfc;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.velocity-update-row textarea {
+    min-height: 78px;
+    resize: vertical;
+}
+
+.velocity-media-field {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.velocity-media-preview {
+    margin-top: 6px;
+    display: inline-block;
+}
+
+.velocity-media-preview img {
+    max-width: 300px;
+    height: auto;
+}
+
+.velocity-update-row input:focus,
+.velocity-update-row textarea:focus,
+.velocity-field input:focus,
+.velocity-field select:focus {
+    outline: none;
+    border-color: #4c8bf5;
+    box-shadow: 0 0 0 3px rgba(76, 139, 245, 0.2);
+    background: #fff;
+}
+
+.velocity-update-row input:focus-visible,
+.velocity-update-row textarea:focus-visible,
+.velocity-field input:focus-visible,
+.velocity-field select:focus-visible {
+    outline: 2px solid #4c8bf5;
+    outline-offset: 2px;
+}
+
+.velocity-update-row input:disabled,
+.velocity-update-row textarea:disabled,
+.velocity-field input:disabled,
+.velocity-field select:disabled {
+    background: #f1f3f5;
+    color: #7a7f87;
+}
+
+.velocity-update-row .velocity-remove-update {
+    text-decoration: none;
+}
+
+#velocity_add_update_info {
+    border-radius: 6px;
+}
+
+@media (min-width: 640px) {
+    .velocity-donasi-fields {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 640px) {
+    .velocity-field {
+        grid-template-columns: 1fr;
+        gap: 6px;
+    }
+    .velocity-field small {
+        grid-column: 1 / -1;
+    }
+}
+
+.velocity-update-body .velocity-field {
+    grid-template-columns: 150px 1fr;
+}
+
+@media (max-width: 640px) {
+    .velocity-update-body .velocity-field {
+        grid-template-columns: 1fr;
+    }
+}

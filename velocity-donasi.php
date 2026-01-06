@@ -15,7 +15,7 @@
  * Plugin Name:       Velocity Donasi
  * Plugin URI:        https://velocitydeveloper.com/
  * Description:       Plugin Donasi oleh Velocity Developer
- * Version:           2.1.0
+ * Version:           3.0.0
  * Author:            Velocity Developer
  * Author URI:        https://velocitydeveloper.com/
  * License:           GPL-2.0+
@@ -33,7 +33,7 @@ if ( ! defined( 'WPINC' ) ) {
  * Start at version 1.0.0 and use SemVer - https://semver.org
  * Rename this for your plugin and update it as you release new versions.
  */
-define( 'VELOCITY_DONASI_VERSION', '2.1.0' );
+define( 'VELOCITY_DONASI_VERSION', '3.0.0' );
 
 /**
  * Define constants
@@ -49,8 +49,6 @@ if (!defined('VELOCITY_DONASI_DIR_URI')) {
 
 // Load everything
 $includes = [
-    'inc/lib/cmb2/init.php',
-    //'inc/ajax.php',
     'inc/rest.php',
     'inc/meta-box.php',
     'inc/functions.php',

@@ -315,7 +315,7 @@ function velocity_update_donasi($atts) {
         foreach($update_info as $data){
           $html .= '<div class="list">';
             $html .= '<div class="text-success font-weight-bold h6">'.$data['judulupdate'].'</div>';
-            $html .= '<div class="text-muted mb-2 float-right"><small>'.$data['tanggal'].'</small></div>';
+            $html .= '<div class="text-muted mb-2 float-end"><small>'.$data['tanggal'].'</small></div>';
             $html .= '<div class="text-dark">'.$data['deskripsiupdate'].'</div>';
             if(!empty($data['imageupdate'])){
                 $html .= '<div class="mt-2"><img class="w-100" src="'.$data['imageupdate'].'" /></div>';
