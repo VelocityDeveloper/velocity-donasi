@@ -138,6 +138,25 @@ function velocity_donasi_rest_submit(WP_REST_Request $request) {
         $html .= $button;
         $html .= '</div>';
 
+        // Email dikirim ke donatur (Duitku)
+        $page_id = velocitydonasi_option('halaman_donatur');
+        $page_url = $page_id ? get_permalink($page_id) : get_home_url();
+        $invoice_url = add_query_arg('inv', $merchantOrderId, $page_url);
+
+        $body = '<html><body>';
+        $body .= '<p>Detail donasi untuk '.get_the_title($data['post_id']).'.</p>';
+        $body .= '<p>Silahkan selesaikan pembayaran sebesar <strong>'.DonasiCurrency($data['totaldonasi']).'</strong> melalui Duitku.</p>';
+        $body .= '<p>Invoice: <strong>'.$merchantOrderId.'</strong></p>';
+        $body .= '<p>Link pembayaran: <a href="'.esc_url($invoice_url).'">'.esc_html($invoice_url).'</a></p>';
+        $body .= get_home_url();
+        $body .= '</body></html>';
+
+        $headers = 'MIME-Version: 1.0' . "\r\n";
+        $headers .= 'Content-type: text/html; charset=iso-8859-1' . "\r\n";
+        $subject = 'Terimakasih telah berdonasi, berikut detail donasi anda #'.$data['invoice'];
+
+        wp_mail($data['user_email'], $subject, $body, $headers);
+
         return new WP_REST_Response(array(
             'success' => true,
             'html'    => $html,
