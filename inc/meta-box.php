@@ -324,7 +324,11 @@ function velocity_donasi_render_field_input($field, $value, $placeholder = '', $
         case 'select':
             $choices = [];
             if (is_callable($options)) {
-                $choices = call_user_func($options, 'donasi');
+                if ($options === 'velocity_donasi_posts_options') {
+                    $choices = call_user_func($options, 'donasi');
+                } else {
+                    $choices = call_user_func($options);
+                }
             } elseif (is_array($options)) {
                 $choices = $options;
             }
@@ -345,7 +349,8 @@ function velocity_donasi_render_field_input($field, $value, $placeholder = '', $
                     $label_value = $choices[$value];
                 }
             }
-            return '<input type="text" id="velocity_' . esc_attr($name) . '" name="velocity_meta[' . esc_attr($name) . ']" value="' . esc_attr($label_value) . '" ' . $ph . ' ' . $req . ' readonly>';
+            return '<input type="text" id="velocity_' . esc_attr($name) . '" value="' . esc_attr($label_value) . '" ' . $ph . ' ' . $req . ' readonly>'
+                . '<input type="hidden" name="velocity_meta[' . esc_attr($name) . ']" value="' . esc_attr($value) . '">';
         default:
             $input_type = $type === 'url' ? 'url' : ($type === 'email' ? 'email' : ($type === 'date' ? 'date' : ($type === 'number' ? 'number' : 'text')));
             return '<input type="' . esc_attr($input_type) . '" id="velocity_' . esc_attr($name) . '" name="velocity_meta[' . esc_attr($name) . ']" value="' . esc_attr($value) . '" ' . $ph . ' ' . $req . ' ' . $readonly . '>';
