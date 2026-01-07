@@ -42,20 +42,48 @@ $container = get_theme_mod( 'justg_container_type', 'container' );
                                         <h1 class="h2"><?php echo get_the_title(); ?></h1>
                                         <div class="mb-2">
                                             <small>
-                                                Kategori: <?php echo do_shortcode( '[wpbb post:terms_list taxonomy="kategori-donasi" separator=", " linked="yes"]' ); ?>
-                                                | Dilihat: <?php echo do_shortcode( '[statistik_kunjungan stat="post"]' ); ?>
-                                                | Sejak: <?php echo $date; ?>
+                                                <?php
+                                                $meta_parts = [];
+                                                if (taxonomy_exists('kategori-donasi')) {
+                                                    $kategori_list = get_the_term_list(get_the_ID(), 'kategori-donasi', '', ', ');
+                                                    if ($kategori_list) {
+                                                        $meta_parts[] = 'Kategori: ' . $kategori_list;
+                                                    }
+                                                }
+                                                if (shortcode_exists('velocity-hits')) {
+                                                    $hits = do_shortcode('[velocity-hits post_id="'.get_the_ID().'"]');
+                                                    if ($hits !== '') {
+                                                        $meta_parts[] = 'Dilihat: ' . $hits;
+                                                    }
+                                                }
+                                                if (!empty($date)) {
+                                                    $meta_parts[] = 'Sejak: ' . $date;
+                                                }
+                                                echo $meta_parts ? implode(' | ', $meta_parts) : '-';
+                                                ?>
                                             </small>
                                         </div>
                                         <div class="single-progress mb-3">
-                                            <?php echo do_shortcode( '[velocity-progress-donasi]' ); ?>
+                                            <?php
+                                            if (shortcode_exists('velocity-progress-donasi')) {
+                                                echo do_shortcode( '[velocity-progress-donasi]' );
+                                            }
+                                            ?>
                                         </div>
                                         <div class="mb-3">
-                                            <?php echo do_shortcode( '[velocity-donasi-button]' ); ?>
+                                            <?php
+                                            if (shortcode_exists('velocity-donasi-button')) {
+                                                echo do_shortcode( '[velocity-donasi-button]' );
+                                            }
+                                            ?>
                                         </div>
                                         <div class="mb-3">
                                             <p class="mb-1">Bagikan donasi:</p>
-                                            <?php echo do_shortcode( '[velocity-donasi-share]' ); ?>
+                                            <?php
+                                            if (shortcode_exists('velocity-donasi-share')) {
+                                                echo do_shortcode( '[velocity-donasi-share]' );
+                                            }
+                                            ?>
                                         </div>
                                     </div>
                                 </div>
@@ -79,11 +107,21 @@ $container = get_theme_mod( 'justg_container_type', 'container' );
                                     </div>
                                     <div class="tab-pane fade" id="kabar" role="tabpanel" aria-labelledby="kabar-tab">
                                         <div class="pt-3">
-                                          <?php echo do_shortcode( '[velocity-update-donasi]' ); ?>                  
+                                          <?php
+                                          if (shortcode_exists('velocity-update-donasi')) {
+                                              echo do_shortcode( '[velocity-update-donasi]' );
+                                          }
+                                          ?>
                                         </div>
                                     </div>
                                     <div class="tab-pane fade" id="donatur" role="tabpanel" aria-labelledby="donatur-tab">
-                                        <div class="pt-3"><?php echo do_shortcode( '[velocity-daftar-donatur]' ); ?></div>
+                                        <div class="pt-3">
+                                            <?php
+                                            if (shortcode_exists('velocity-daftar-donatur')) {
+                                                echo do_shortcode( '[velocity-daftar-donatur]' );
+                                            }
+                                            ?>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -120,14 +158,16 @@ $container = get_theme_mod( 'justg_container_type', 'container' );
 							if ( $related_query->have_posts() ) :
 								echo '<div class="related-post-product block-primary mt-5">';
 									echo '<div class="title-single-part fs-4 fw-bold mb-2">Donasi Terkait</div>';
-									echo '<div class="row">';
-									while ( $related_query->have_posts() ) : $related_query->the_post();
+                                    echo '<div class="row">';
+                                    while ( $related_query->have_posts() ) : $related_query->the_post();
                                         echo '<div class="col-md-4 mb-4">';
                                             echo '<div class="border h-100">';
-                                                echo do_shortcode( '[velocity-donasi-loop]' );
+                                                if (shortcode_exists('velocity-donasi-loop')) {
+                                                    echo do_shortcode( '[velocity-donasi-loop]' );
+                                                }
                                             echo '</div>';
                                         echo '</div>';
-									endwhile;
+                                    endwhile;
 									echo '</div>';
 								echo '</div>';
 							endif;

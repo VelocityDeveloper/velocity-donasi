@@ -179,15 +179,17 @@ function DaftarDonasiMasuk($post_id = null) {
                             echo $bankdonasi['nobank'].' a/n '.$bankdonasi['atasnama'];
                         echo '</div>';
                     } elseif ($metode_bayar == 'duitku') {
-                        $invoice = get_the_title($post_id);
-                        $payment_button = do_shortcode('[tombol_bayar_duitku invoice="'.$invoice.'" class="btn btn-sm btn-primary mt-2"]');
-                        echo '<div class="mt-2">'.$payment_button.'</div>';
+                        if (velocity_donasi_is_duitku_ready()) {
+                            $invoice = get_the_title($post_id);
+                            $payment_button = do_shortcode('[tombol_bayar_duitku invoice="'.$invoice.'" class="btn btn-sm btn-primary mt-2"]');
+                            echo '<div class="mt-2">'.$payment_button.'</div>';
+                        }
                     }
                     echo '<div class="mt-2">';
                         if(has_post_thumbnail($post_id)){
                             $thumbnail_url = get_the_post_thumbnail_url($post_id, 'full');
                             echo '<a class="px-3 btn btn-sm btn-primary" href="'.$thumbnail_url.'" target="_blank">Bukti Transfer</a>';
-                        } elseif($status_donasi == 'Pending' && $metode_bayar == 'bank'){
+                        } elseif($status_donasi == 'Pending' && !($metode_bayar == 'duitku' && velocity_donasi_is_duitku_ready())){
                             echo '<a class="px-3 btn btn-sm btn-success" href="?act=konfirmasi&id='.$post_id.'" target="_blank">Konfirmasi</a>';
                         }
                     echo '</div>';
@@ -436,6 +438,13 @@ function tampilkan_daftar_donatur($donasi_id) {
         echo '</li>';
     }
     echo '</ul>';
+}
+
+function velocity_donasi_is_duitku_ready() {
+    return class_exists('Velocity_Addons_Duitku')
+        && method_exists('Velocity_Addons_Duitku', 'is_active')
+        && Velocity_Addons_Duitku::is_active()
+        && shortcode_exists('tombol_bayar_duitku');
 }
 
 /**
