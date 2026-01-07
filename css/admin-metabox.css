@@ -156,6 +156,17 @@
     display: flex;
     gap: 8px;
     align-items: center;
+    flex-wrap: wrap;
+}
+
+.velocity-media-field input {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto;
+}
+
+.velocity-media-button {
+    white-space: nowrap;
 }
 
 .velocity-media-preview {
@@ -186,12 +197,14 @@
     outline-offset: 2px;
 }
 
-.velocity-update-row input:disabled,
-.velocity-update-row textarea:disabled,
-.velocity-field input:disabled,
-.velocity-field select:disabled {
-    background: #f1f3f5;
-    color: #7a7f87;
+.velocity-update-row input[readonly],
+.velocity-update-row textarea[readonly],
+.velocity-field input[readonly],
+.velocity-field textarea[readonly],
+.velocity-field select[disabled] {
+    background: #f3f5f7;
+    color: #6c7580;
+    border-color: #d6dbe1;
 }
 
 .velocity-update-row .velocity-remove-update {

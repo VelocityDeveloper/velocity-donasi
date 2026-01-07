@@ -107,14 +107,16 @@ function velocity_donasi_meta_schema() {
                 'default' => '',
                 'placeholder' => 'bank / duitku',
                 'required' => true,
+                'readonly' => true,
             ],
             [
-                'type'    => 'text',
+                'type'    => 'bank_label',
                 'name'    => 'bank',
                 'label'   => 'Bank Pembayaran',
                 'default' => '',
                 'placeholder' => 'Nama bank',
                 'required' => false,
+                'readonly' => true,
             ],
             [
                 'type'    => 'number',
@@ -123,6 +125,7 @@ function velocity_donasi_meta_schema() {
                 'default' => '',
                 'placeholder' => '0',
                 'required' => false,
+                'readonly' => true,
             ],
             [
                 'type'    => 'number',
@@ -131,6 +134,7 @@ function velocity_donasi_meta_schema() {
                 'default' => 0,
                 'placeholder' => '0',
                 'required' => true,
+                'readonly' => true,
             ],
             [
                 'type'    => 'text',
@@ -147,6 +151,7 @@ function velocity_donasi_meta_schema() {
                 'default' => '',
                 'placeholder' => 'email@contoh.com',
                 'required' => false,
+                'readonly' => true,
             ],
             [
                 'type'    => 'text',
@@ -155,6 +160,7 @@ function velocity_donasi_meta_schema() {
                 'default' => '',
                 'placeholder' => '08xxxx',
                 'required' => false,
+                'readonly' => true,
             ],
             [
                 'type'    => 'select',
@@ -163,6 +169,7 @@ function velocity_donasi_meta_schema() {
                 'default' => '',
                 'placeholder' => '',
                 'required' => false,
+                'readonly' => true,
                 'options' => 'velocity_donasi_users_options',
             ],
             [
@@ -301,16 +308,18 @@ function velocity_donasi_render_field_input($field, $value, $placeholder = '', $
     $options = isset($field['options']) ? $field['options'] : [];
     $req = $required ? 'required' : '';
     $ph = $placeholder ? 'placeholder="' . esc_attr($placeholder) . '"' : '';
+    $readonly = !empty($field['readonly']) ? 'readonly' : '';
+    $disabled = !empty($field['readonly']) && $type === 'select' ? 'disabled' : '';
 
     switch ($type) {
         case 'textarea':
-            return '<textarea id="velocity_' . esc_attr($name) . '" name="velocity_meta[' . esc_attr($name) . ']" rows="3" ' . $ph . ' ' . $req . '>' . esc_textarea($value) . '</textarea>';
+            return '<textarea id="velocity_' . esc_attr($name) . '" name="velocity_meta[' . esc_attr($name) . ']" rows="3" ' . $ph . ' ' . $req . ' ' . $readonly . '>' . esc_textarea($value) . '</textarea>';
         case 'media':
             $input_id = 'velocity_' . esc_attr($name);
             $button_id = 'btn_' . esc_attr($name) . '_' . wp_generate_uuid4();
             return '<div class="velocity-media-field">'
-                . '<input type="url" id="' . $input_id . '" name="velocity_meta[' . esc_attr($name) . ']" value="' . esc_attr($value) . '" ' . $ph . ' ' . $req . '>'
-                . '<button type="button" class="button velocity-media-button" data-target="#' . $input_id . '" id="' . $button_id . '">' . esc_html__('Pilih Gambar', 'velocity-donasi') . '</button>'
+                . '<input type="url" id="' . $input_id . '" name="velocity_meta[' . esc_attr($name) . ']" value="' . esc_attr($value) . '" ' . $ph . ' ' . $req . ' ' . $readonly . '>'
+                . '<button type="button" class="button velocity-media-button" data-target="#' . $input_id . '" id="' . $button_id . '" ' . $disabled . '>' . esc_html__('Pilih Gambar', 'velocity-donasi') . '</button>'
             . '</div>';
         case 'select':
             $choices = [];
@@ -319,15 +328,27 @@ function velocity_donasi_render_field_input($field, $value, $placeholder = '', $
             } elseif (is_array($options)) {
                 $choices = $options;
             }
-            $html = '<select id="velocity_' . esc_attr($name) . '" name="velocity_meta[' . esc_attr($name) . ']" ' . $req . '>';
+            $html = '<select id="velocity_' . esc_attr($name) . '" name="velocity_meta[' . esc_attr($name) . ']" ' . $req . ' ' . $disabled . '>';
             foreach ($choices as $opt_value => $opt_label) {
                 $html .= '<option value="' . esc_attr($opt_value) . '" ' . selected($value, $opt_value, false) . '>' . esc_html($opt_label) . '</option>';
             }
             $html .= '</select>';
+            if ($disabled) {
+                $html .= '<input type="hidden" name="velocity_meta[' . esc_attr($name) . ']" value="' . esc_attr($value) . '">';
+            }
             return $html;
+        case 'bank_label':
+            $label_value = $value;
+            if ($value && function_exists('velocity_donasi_bank_choices')) {
+                $choices = velocity_donasi_bank_choices();
+                if (isset($choices[$value])) {
+                    $label_value = $choices[$value];
+                }
+            }
+            return '<input type="text" id="velocity_' . esc_attr($name) . '" name="velocity_meta[' . esc_attr($name) . ']" value="' . esc_attr($label_value) . '" ' . $ph . ' ' . $req . ' readonly>';
         default:
             $input_type = $type === 'url' ? 'url' : ($type === 'email' ? 'email' : ($type === 'date' ? 'date' : ($type === 'number' ? 'number' : 'text')));
-            return '<input type="' . esc_attr($input_type) . '" id="velocity_' . esc_attr($name) . '" name="velocity_meta[' . esc_attr($name) . ']" value="' . esc_attr($value) . '" ' . $ph . ' ' . $req . '>';
+            return '<input type="' . esc_attr($input_type) . '" id="velocity_' . esc_attr($name) . '" name="velocity_meta[' . esc_attr($name) . ']" value="' . esc_attr($value) . '" ' . $ph . ' ' . $req . ' ' . $readonly . '>';
     }
 }
 
