@@ -471,12 +471,28 @@ function velocity_donasi_duitku_callback_handler($payload) {
     $payment_code = isset($payload['paymentCode']) ? sanitize_text_field($payload['paymentCode']) : '';
     $amount = isset($payload['amount']) ? sanitize_text_field($payload['amount']) : '';
 
-    $donasi = get_page_by_title($invoice, OBJECT, 'donasi-masuk');
+    $donasi = velocity_donasi_find_by_invoice($invoice, 'duitku');
     if (!$donasi) {
         return;
     }
 
-    $status = $result_code === '00' ? 'Sukses' : 'Pending';
+    $current = get_post_meta($donasi->ID, 'status', true);
+    if ($result_code === '00') {
+        $total = (int) get_post_meta($donasi->ID, 'totaldonasi', true);
+        if ($amount !== '' && (int) $amount !== $total) {
+            // Nominal tidak sama dengan donasi: jangan tandai Sukses, catat untuk admin.
+            update_post_meta($donasi->ID, 'duitku_amount', $amount);
+            error_log(sprintf('[velocity-donasi] callback Duitku %s: nominal %d tidak sama dengan donasi %d', $invoice, (int) $amount, $total));
+            return;
+        }
+        $status = 'Sukses';
+    } else {
+        // Callback gagal/terlambat tidak menurunkan donasi yang sudah Sukses.
+        if ($current === 'Sukses') {
+            return;
+        }
+        $status = 'Pending';
+    }
 
     update_post_meta($donasi->ID, 'status', $status);
     update_post_meta($donasi->ID, 'duitku_reference', $reference);

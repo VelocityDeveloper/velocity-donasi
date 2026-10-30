@@ -263,7 +263,6 @@ function velocity_donasi_button($atts) {
                     echo '</div>';
                     echo '<input type="hidden" name="user_id" value="'.get_current_user_id().'"/>';
                     echo '<input type="hidden" name="post_id" value="'.$post_id.'"/>';
-                    echo '<input type="hidden" name="invoice" value="'.mt_rand(100000000, 999999999).'"/>';
                 echo '</form>';
             echo '</div>';
         echo '</div>';

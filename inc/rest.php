@@ -30,8 +30,10 @@ function velocity_donasi_rest_submit(WP_REST_Request $request) {
         ), 200);
     }
 
+    // Invoice dibuat di server: nilai "invoice" dari form diabaikan (bisa diisi invoice milik donasi lain).
+    $invoice  = velocity_donasi_new_invoice();
     $new_post = array(
-        'post_title'   => sanitize_text_field(isset($data['invoice']) ? $data['invoice'] : ''),
+        'post_title'   => $invoice,
         'post_content' => sanitize_textarea_field(isset($data['pesan']) ? $data['pesan'] : ''),
         'post_status'  => 'publish',
         'post_type'    => 'donasi-masuk',
@@ -77,7 +79,7 @@ function velocity_donasi_rest_submit(WP_REST_Request $request) {
 
         $duitku = new Velocity_Addons_Duitku();
         $paymentAmount   = intval(isset($data['totaldonasi']) ? $data['totaldonasi'] : 0);
-        $merchantOrderId = sanitize_text_field(isset($data['invoice']) ? $data['invoice'] : '');
+        $merchantOrderId = $invoice;
         $productDetails  = get_the_title(isset($data['post_id']) ? $data['post_id'] : 0);
         $customerVaName  = sanitize_text_field(isset($data['first_name']) ? $data['first_name'] : '');
         $email           = sanitize_email(isset($data['user_email']) ? $data['user_email'] : '');
@@ -135,7 +137,7 @@ function velocity_donasi_rest_submit(WP_REST_Request $request) {
         update_post_meta($post_id, 'duitku_status_code', isset($invoice_response['statusCode']) ? $invoice_response['statusCode'] : '');
         update_post_meta($post_id, 'duitku_status_message', isset($invoice_response['statusMessage']) ? $invoice_response['statusMessage'] : '');
 
-        $button = do_shortcode('[tombol_bayar_duitku invoice="'.$merchantOrderId.'" class="btn btn-primary w-100"]');
+        $button = do_shortcode('[tombol_bayar_duitku invoice="'.esc_attr($merchantOrderId).'" class="btn btn-primary w-100"]');
         $html  = '<div class="alert alert-success">';
         $html .= '<p>Donasi sedang diproses melalui Duitku.</p>';
         $html .= '<p class="mb-2">Klik tombol di bawah untuk menyelesaikan pembayaran.</p>';
@@ -150,14 +152,14 @@ function velocity_donasi_rest_submit(WP_REST_Request $request) {
         $body = '<html><body>';
         $body .= '<p>Detail donasi untuk '.get_the_title($data['post_id']).'.</p>';
         $body .= '<p>Silahkan selesaikan pembayaran sebesar <strong>'.DonasiCurrency($data['totaldonasi']).'</strong> melalui Duitku.</p>';
-        $body .= '<p>Invoice: <strong>'.$merchantOrderId.'</strong></p>';
+        $body .= '<p>Invoice: <strong>'.esc_html($merchantOrderId).'</strong></p>';
         $body .= '<p>Link pembayaran: <a href="'.esc_url($invoice_url).'">'.esc_html($invoice_url).'</a></p>';
         $body .= get_home_url();
         $body .= '</body></html>';
 
         $headers = 'MIME-Version: 1.0' . "\r\n";
         $headers .= 'Content-type: text/html; charset=iso-8859-1' . "\r\n";
-        $subject = 'Terimakasih telah berdonasi, berikut detail donasi anda #'.$data['invoice'];
+        $subject = 'Terimakasih telah berdonasi, berikut detail donasi anda #'.$invoice;
 
         wp_mail($data['user_email'], $subject, $body, $headers);
 
@@ -177,6 +179,8 @@ function velocity_donasi_rest_submit(WP_REST_Request $request) {
     if ($databank) {
         $html .= '<p class="mb-0 fw-bold">'.$databank['nobank'].' a/n '.$databank['atasnama'].'</p>';
     }
+    $invoice_url = velocity_donasi_invoice_url($invoice, $post_id);
+    $html .= '<p class="mt-2 mb-0">Invoice: <strong>'.esc_html($invoice).'</strong> (<a href="'.esc_url($invoice_url).'">detail donasi</a>)</p>';
     $html .= '</div>';
 
     // Email dikirim ke donatur
@@ -186,12 +190,14 @@ function velocity_donasi_rest_submit(WP_REST_Request $request) {
     if ($databank) {
         $body .= '<p><strong>'.strtoupper($bankpilihan).' ('.$databank['nobank'].' a/n '.$databank['atasnama'].')</strong>.</p>';
     }
+    $body .= '<p>Invoice: <strong>'.esc_html($invoice).'</strong></p>';
+    $body .= '<p>Detail donasi: <a href="'.esc_url($invoice_url).'">'.esc_html($invoice_url).'</a></p>';
     $body .= get_home_url();
     $body .= '</body></html>';
 
     $headers = 'MIME-Version: 1.0' . "\r\n";
     $headers .= 'Content-type: text/html; charset=iso-8859-1' . "\r\n";
-    $subject = 'Terimakasih telah berdonasi, berikut detail donasi anda #'.$data['invoice'];
+    $subject = 'Terimakasih telah berdonasi, berikut detail donasi anda #'.$invoice;
 
     wp_mail($data['user_email'], $subject, $body, $headers);
 

@@ -37,26 +37,73 @@ function velocity_donasi_pg_available_methods() {
 }
 
 /**
- * Invoice dari form (angka acak di browser) hanya dipakai bila belum dipakai donasi lain maupun
- * transaksi vd-payment-gateway; invoice yang sama bisa menimpa transaksi milik pesanan lain.
+ * Invoice dipakai donasi lain, atau transaksi vd-payment-gateway (DOKU, Duitku) milik pesanan lain.
  */
-function velocity_donasi_pg_unique_invoice($method, $invoice, $post_id) {
+function velocity_donasi_invoice_taken($invoice, $post_id = 0) {
     global $wpdb;
-    $invoice = preg_match('/^\d{6,12}$/', (string) $invoice) ? (string) $invoice : '';
-    for ($i = 0; $i < 10; $i++) {
-        if ($invoice !== '') {
-            $taken = (int) $wpdb->get_var($wpdb->prepare(
-                "SELECT ID FROM {$wpdb->posts} WHERE post_type = 'donasi-masuk' AND post_title = %s AND ID <> %d LIMIT 1",
-                $invoice,
-                $post_id
-            ));
-            if (!$taken && !vd_pg_get_transaction($method, $invoice)) {
-                return $invoice;
+    $taken = (int) $wpdb->get_var($wpdb->prepare(
+        "SELECT ID FROM {$wpdb->posts} WHERE post_type = 'donasi-masuk' AND post_title = %s AND ID <> %d LIMIT 1",
+        (string) $invoice,
+        (int) $post_id
+    ));
+    if ($taken) {
+        return true;
+    }
+    if (function_exists('vd_pg_get_transaction')) {
+        foreach (array_merge(array_keys(velocity_donasi_pg_methods()), array('duitku')) as $gateway) {
+            if (vd_pg_get_transaction($gateway, (string) $invoice)) {
+                return true;
             }
         }
-        $invoice = (string) wp_rand(100000000, 999999999);
     }
-    return 'D' . $post_id . '-' . wp_rand(1000, 9999);
+    return false;
+}
+
+/**
+ * Invoice donasi baru, dibuat di server (bukan dari form): 9 digit acak yang belum dipakai.
+ * Filter velocity_donasi_new_invoice boleh mengusulkan nomor lain; nomor yang tidak sah/terpakai diganti.
+ */
+function velocity_donasi_new_invoice($post_id = 0) {
+    for ($i = 0; $i < 10; $i++) {
+        $invoice = (string) apply_filters('velocity_donasi_new_invoice', (string) wp_rand(100000000, 999999999), (int) $post_id, $i);
+        if (preg_match('/^\d{6,12}$/', $invoice) && !velocity_donasi_invoice_taken($invoice, $post_id)) {
+            return $invoice;
+        }
+    }
+    return 'D' . (int) $post_id . '-' . wp_rand(1000, 9999);
+}
+
+/** Invoice donasi yang sudah ada dipakai bila masih unik; selain itu diganti invoice baru. */
+function velocity_donasi_pg_unique_invoice($method, $invoice, $post_id) {
+    $invoice = (string) $invoice;
+    if (preg_match('/^\d{6,12}$/', $invoice) && !velocity_donasi_invoice_taken($invoice, $post_id)) {
+        return $invoice;
+    }
+    return velocity_donasi_new_invoice($post_id);
+}
+
+/**
+ * Donasi untuk satu invoice (judul post donasi-masuk), cocok persis dan hanya yang terbit.
+ * Data lama bisa punya invoice kembar: dengan $method, hanya donasi bermetode itu yang dipilih (terbaru dulu).
+ *
+ * @return WP_Post|null
+ */
+function velocity_donasi_find_by_invoice($invoice, $method = '') {
+    global $wpdb;
+    $invoice = trim((string) $invoice);
+    if ($invoice === '') {
+        return null;
+    }
+    $ids = $wpdb->get_col($wpdb->prepare(
+        "SELECT ID FROM {$wpdb->posts} WHERE post_type = 'donasi-masuk' AND post_status = 'publish' AND post_title = %s ORDER BY ID DESC LIMIT 20",
+        $invoice
+    ));
+    foreach ($ids as $id) {
+        if ($method === '' || get_post_meta((int) $id, 'metode_bayar', true) === $method) {
+            return get_post((int) $id);
+        }
+    }
+    return null;
 }
 
 /**
