@@ -178,6 +178,10 @@ function DaftarDonasiMasuk($post_id = null) {
                             }
                             echo $bankdonasi['nobank'].' a/n '.$bankdonasi['atasnama'];
                         echo '</div>';
+                    } elseif (velocity_donasi_pg_handles($metode_bayar)) {
+                        if (in_array($status_donasi, array('Pending', 'Menunggu Pembayaran'), true) && velocity_donasi_pg_is_available($metode_bayar)) {
+                            echo '<div class="mt-2">'.velocity_donasi_pg_pay_button($post_id).'</div>';
+                        }
                     } elseif ($metode_bayar == 'duitku') {
                         if (velocity_donasi_is_duitku_ready()) {
                             $invoice = get_the_title($post_id);
@@ -189,7 +193,7 @@ function DaftarDonasiMasuk($post_id = null) {
                         if(has_post_thumbnail($post_id)){
                             $thumbnail_url = get_the_post_thumbnail_url($post_id, 'full');
                             echo '<a class="px-3 btn btn-sm btn-primary" href="'.$thumbnail_url.'" target="_blank">Bukti Transfer</a>';
-                        } elseif($status_donasi == 'Pending' && !($metode_bayar == 'duitku' && velocity_donasi_is_duitku_ready())){
+                        } elseif($status_donasi == 'Pending' && !($metode_bayar == 'duitku' && velocity_donasi_is_duitku_ready()) && !velocity_donasi_pg_handles($metode_bayar)){
                             echo '<a class="px-3 btn btn-sm btn-success" href="?act=konfirmasi&id='.$post_id.'" target="_blank">Konfirmasi</a>';
                         }
                     echo '</div>';

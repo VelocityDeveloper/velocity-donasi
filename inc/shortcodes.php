@@ -140,7 +140,7 @@ function velocity_donasi_button($atts) {
     global $post;
     $atribut = shortcode_atts(array(
         'text' => 'Donasi',
-        'post_id' => $post->ID,
+        'post_id' => $post ? $post->ID : 0,
     ), $atts);
     $text = $atribut['text'];
     $post_id = $atribut['post_id'];
@@ -176,6 +176,12 @@ function velocity_donasi_button($atts) {
                                 echo '<div class="form-check">';
                                     echo '<input class="form-check-input pilih-bayar" type="radio" name="bayar" id="paymentDuitku" value="duitku" required>';
                                     echo '<label class="form-check-label" for="paymentDuitku">Payment Gateway (Duitku)</label>';
+                                echo '</div>';
+                            }
+                            foreach (velocity_donasi_pg_available_methods() as $pg_id => $pg_label) {
+                                echo '<div class="form-check">';
+                                    echo '<input class="form-check-input pilih-bayar" type="radio" name="bayar" id="payment' . esc_attr($pg_id . $id) . '" value="' . esc_attr($pg_id) . '" required>';
+                                    echo '<label class="form-check-label" for="payment' . esc_attr($pg_id . $id) . '">Payment Gateway (' . esc_html($pg_label) . ')</label>';
                                 echo '</div>';
                             }
                             echo '<div id="bankOptions" style="display: none;">';

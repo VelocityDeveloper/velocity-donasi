@@ -61,6 +61,10 @@ function velocity_donasi_rest_submit(WP_REST_Request $request) {
     add_post_meta($post_id, 'donasi_id', sanitize_text_field(isset($data['post_id']) ? $data['post_id'] : ''));
     add_post_meta($post_id, 'status', 'Pending');
 
+    if (velocity_donasi_pg_handles($metode_bayar)) {
+        return velocity_donasi_rest_submit_pg($metode_bayar, $post_id, $data);
+    }
+
     if ($metode_bayar === 'duitku') {
         $duitku_ready = class_exists('Velocity_Addons_Duitku') && method_exists('Velocity_Addons_Duitku', 'is_active') && Velocity_Addons_Duitku::is_active();
         if (!$duitku_ready) {
@@ -190,6 +194,65 @@ function velocity_donasi_rest_submit(WP_REST_Request $request) {
     $subject = 'Terimakasih telah berdonasi, berikut detail donasi anda #'.$data['invoice'];
 
     wp_mail($data['user_email'], $subject, $body, $headers);
+
+    return new WP_REST_Response(array(
+        'success' => true,
+        'html'    => $html,
+    ), 200);
+}
+
+/**
+ * Donasi lewat vd-payment-gateway (DOKU): buat tagihan lalu tampilkan tombol bayar.
+ */
+function velocity_donasi_rest_submit_pg($method, $post_id, $data) {
+    $methods = velocity_donasi_pg_methods();
+    $label   = $methods[$method];
+    $fail    = function ($message) use ($post_id) {
+        update_post_meta($post_id, 'status', 'Gagal');
+        return new WP_REST_Response(array(
+            'success' => false,
+            'html'    => '<div class="alert alert-danger">' . esc_html($message) . '</div>',
+        ), 200);
+    };
+
+    if (!velocity_donasi_pg_is_available($method)) {
+        return $fail('Payment Gateway tidak tersedia atau belum diaktifkan. Silakan coba metode lain.');
+    }
+    // Nominal dihitung di browser: cek lagi di server (minimal sama dengan form).
+    if ((int) get_post_meta($post_id, 'totaldonasi', true) < 10000) {
+        return $fail('Nominal donasi minimal Rp10.000.');
+    }
+
+    $invoice = velocity_donasi_pg_unique_invoice($method, get_the_title($post_id), $post_id);
+    if ($invoice !== get_the_title($post_id)) {
+        wp_update_post(array('ID' => $post_id, 'post_title' => $invoice));
+    }
+
+    $result = velocity_donasi_pg_create_payment($method, $post_id);
+    if (is_wp_error($result)) {
+        return $fail('Gagal membuat pembayaran. ' . $result->get_error_message());
+    }
+    update_post_meta($post_id, 'status', 'Menunggu Pembayaran');
+
+    $html  = '<div class="alert alert-success">';
+    $html .= '<p>Donasi sedang diproses melalui ' . esc_html($label) . '. Invoice: <strong>' . esc_html($invoice) . '</strong></p>';
+    $html .= '<p class="mb-2">Klik tombol di bawah untuk menyelesaikan pembayaran (Virtual Account, QRIS, e-wallet, kartu).</p>';
+    $html .= '<a class="btn btn-primary w-100" href="' . esc_url($result['payment_url']) . '">Bayar via ' . esc_html($label) . '</a>';
+    $html .= '</div>';
+
+    $campaign = get_the_title((int) get_post_meta($post_id, 'donasi_id', true));
+    $total    = DonasiCurrency(get_post_meta($post_id, 'totaldonasi', true));
+    $body  = '<html><body>';
+    $body .= '<p>Detail donasi untuk ' . esc_html($campaign) . '.</p>';
+    $body .= '<p>Silahkan selesaikan pembayaran sebesar <strong>' . $total . '</strong> melalui ' . esc_html($label) . '.</p>';
+    $body .= '<p>Invoice: <strong>' . esc_html($invoice) . '</strong></p>';
+    $body .= '<p>Link pembayaran: <a href="' . esc_url(velocity_donasi_invoice_url($invoice)) . '">' . esc_html(velocity_donasi_invoice_url($invoice)) . '</a></p>';
+    $body .= get_home_url();
+    $body .= '</body></html>';
+
+    $headers = 'MIME-Version: 1.0' . "\r\n";
+    $headers .= 'Content-type: text/html; charset=UTF-8' . "\r\n";
+    wp_mail(get_post_meta($post_id, 'email_donatur', true), 'Terimakasih telah berdonasi, berikut detail donasi anda #' . $invoice, $body, $headers);
 
     return new WP_REST_Response(array(
         'success' => true,
