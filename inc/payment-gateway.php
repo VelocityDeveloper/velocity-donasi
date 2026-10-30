@@ -268,6 +268,8 @@ function velocity_donasi_pg_status_changed($transaction, $status, $payload) {
             return;
         }
         // EXPIRED terlambat untuk link lama, padahal link baru (invoice sama) masih berlaku.
+        // Catatan: transaksi vdpg sudah "expired", jadi EXPIRED berikutnya tidak memicu event lagi; donasi tetap
+        // "Menunggu Pembayaran" (hanya tampilan), link dibuat ulang saat dibuka dan pembayaran tetap bisa lunas.
         if ((int) get_post_meta($post_id, 'pg_expires_at', true) > time() + VELOCITY_DONASI_PG_EXPIRE_GRACE) {
             return;
         }
