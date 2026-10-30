@@ -9,6 +9,7 @@ if (!defined('ABSPATH')) {
  */
 
 define('VELOCITY_DONASI_PG_SOURCE', 'velocity-donasi');
+define('VELOCITY_DONASI_PG_EXPIRE_GRACE', 5 * 60); // detik toleransi selisih jam untuk notifikasi EXPIRED
 
 /** Metode pembayaran donasi yang ditangani langsung oleh vd-payment-gateway. */
 function velocity_donasi_pg_methods() {
@@ -157,7 +158,8 @@ function velocity_donasi_pg_can_pay($post_id) {
     if (in_array($status, array('Pending', 'Menunggu Pembayaran'), true)) {
         return true;
     }
-    if ($status !== 'Gagal' || !function_exists('vd_pg_get_transaction')) {
+    // Gagal karena dibatalkan/diubah admin tidak punya penanda pg_expired.
+    if ($status !== 'Gagal' || get_post_meta($post_id, 'pg_expired', true) !== '1' || !function_exists('vd_pg_get_transaction')) {
         return false;
     }
     $transaction = vd_pg_get_transaction($method, get_the_title($post_id));
@@ -234,7 +236,8 @@ function velocity_donasi_mask($type, $value) {
     }
     if ($type === 'email' && strpos($value, '@') !== false) {
         list($user, $domain) = explode('@', $value, 2);
-        return mb_substr($user, 0, 2) . '***@' . $domain;
+        $keep = mb_strlen($user) > 3 ? 2 : (mb_strlen($user) > 1 ? 1 : 0);
+        return mb_substr($user, 0, $keep) . '***@' . $domain;
     }
     if ($type === 'phone') {
         $digits = preg_replace('/\D+/', '', $value);
@@ -259,12 +262,22 @@ function velocity_donasi_pg_status_changed($transaction, $status, $payload) {
     if (!isset($map[$status])) {
         return;
     }
-    // Donasi yang sudah Sukses tidak turun jadi Gagal karena link lama kedaluwarsa.
-    if ($status === 'expired' && get_post_meta($post_id, 'status', true) === 'Sukses') {
-        return;
+    if ($status === 'expired') {
+        // Hanya donasi yang masih menunggu pembayaran yang jadi Gagal; status buatan admin (Gagal/Sukses/...) tidak ditimpa.
+        if (!in_array((string) get_post_meta($post_id, 'status', true), array('Pending', 'Menunggu Pembayaran'), true)) {
+            return;
+        }
+        // EXPIRED terlambat untuk link lama, padahal link baru (invoice sama) masih berlaku.
+        if ((int) get_post_meta($post_id, 'pg_expires_at', true) > time() + VELOCITY_DONASI_PG_EXPIRE_GRACE) {
+            return;
+        }
     }
 
     update_post_meta($post_id, 'status', $map[$status]);
+    if ($status === 'expired') {
+        // Ditulis sesudah status: perubahan status lain (admin, bayar ulang) menghapus penanda ini.
+        update_post_meta($post_id, 'pg_expired', 1);
+    }
     update_post_meta($post_id, 'pg_reference', sanitize_text_field((string) $transaction->reference));
     update_post_meta($post_id, 'pg_channel', sanitize_text_field((string) $transaction->channel));
     if ($status === 'paid') {
@@ -275,3 +288,20 @@ function velocity_donasi_pg_status_changed($transaction, $status, $payload) {
     do_action('velocity_donasi_payment_' . $status, $post_id, $transaction, is_array($payload) ? $payload : array());
 }
 add_action('vd_pg_payment_status_changed', 'velocity_donasi_pg_status_changed', 10, 3);
+
+/** Setiap perubahan status donasi (meta box admin, bayar ulang, callback) menghapus penanda kedaluwarsa. */
+function velocity_donasi_pg_clear_expired_flag($meta_id, $post_id, $meta_key) {
+    if ($meta_key === 'status') {
+        delete_post_meta($post_id, 'pg_expired');
+    }
+}
+add_action('added_post_meta', 'velocity_donasi_pg_clear_expired_flag', 10, 3);
+add_action('updated_post_meta', 'velocity_donasi_pg_clear_expired_flag', 10, 3);
+
+/** Token t= di URL halaman donatur jangan ikut terkirim lewat Referer ke situs lain. */
+function velocity_donasi_invoice_referrer_policy() {
+    if (isset($_GET['inv'], $_GET['t']) && !headers_sent()) {
+        header('Referrer-Policy: no-referrer');
+    }
+}
+add_action('template_redirect', 'velocity_donasi_invoice_referrer_policy');
