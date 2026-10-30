@@ -53,9 +53,9 @@ function velocity_donasi_pg_unique_invoice($method, $invoice, $post_id) {
                 return $invoice;
             }
         }
-        $invoice = (string) mt_rand(100000000, 999999999);
+        $invoice = (string) wp_rand(100000000, 999999999);
     }
-    return $invoice . $post_id;
+    return 'D' . $post_id . '-' . wp_rand(1000, 9999);
 }
 
 /**
@@ -123,15 +123,39 @@ function velocity_donasi_pg_payment_link($post_id) {
         return $url;
     }
 
-    $lock = 'velocity_donasi_pay_regen_' . $post_id;
-    if (get_transient($lock)) {
+    if (!velocity_donasi_pg_regen_lock($post_id)) {
         return new WP_Error('velocity_donasi_pay_regen_wait', 'Link pembayaran sedang dibuat ulang, coba beberapa menit lagi.');
     }
-    set_transient($lock, 1, 5 * MINUTE_IN_SECONDS);
+    // Permintaan lain mungkin sudah membuat link baru sebelum kunci ini didapat.
+    wp_cache_delete($post_id, 'post_meta');
+    $url        = (string) get_post_meta($post_id, 'pg_payment_url', true);
+    $expires_at = (int) get_post_meta($post_id, 'pg_expires_at', true);
+    if ($url !== '' && ($expires_at === 0 || $expires_at > time() + 60)) {
+        return $url;
+    }
 
     $result = velocity_donasi_pg_create_payment($method, $post_id);
 
     return is_wp_error($result) ? $result : (string) $result['payment_url'];
+}
+
+/**
+ * Kunci atomik 1x per 5 menit (add_option gagal bila baris sudah ada, tidak seperti get/set_transient).
+ */
+function velocity_donasi_pg_regen_lock($post_id) {
+    $name = 'velocity_donasi_pay_regen_' . (int) $post_id;
+    if (add_option($name, time(), '', 'no')) {
+        return true;
+    }
+    $since = (int) get_option($name);
+    if ($since > time() - 5 * MINUTE_IN_SECONDS) {
+        return false;
+    }
+    // Kunci basi: hanya satu permintaan yang berhasil memperbaruinya.
+    global $wpdb;
+    $taken = (bool) $wpdb->query($wpdb->prepare("UPDATE {$wpdb->options} SET option_value = %s WHERE option_name = %s AND option_value = %s", (string) time(), $name, (string) $since));
+    wp_cache_delete($name, 'options');
+    return $taken;
 }
 
 /** Tombol bayar untuk donasi DOKU (riwayat donasi & hasil submit). */
@@ -176,6 +200,7 @@ function velocity_donasi_pg_status_changed($transaction, $status, $payload) {
     update_post_meta($post_id, 'pg_channel', sanitize_text_field((string) $transaction->channel));
     if ($status === 'paid') {
         update_post_meta($post_id, 'pg_paid_amount', (int) $transaction->amount);
+        delete_option('velocity_donasi_pay_regen_' . $post_id);
     }
 
     do_action('velocity_donasi_payment_' . $status, $post_id, $transaction, is_array($payload) ? $payload : array());

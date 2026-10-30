@@ -62,7 +62,7 @@ function velocity_donasi_rest_submit(WP_REST_Request $request) {
     add_post_meta($post_id, 'status', 'Pending');
 
     if (velocity_donasi_pg_handles($metode_bayar)) {
-        return velocity_donasi_rest_submit_pg($metode_bayar, $post_id, $data);
+        return velocity_donasi_rest_submit_pg(sanitize_key($metode_bayar), $post_id, $data);
     }
 
     if ($metode_bayar === 'duitku') {
@@ -215,12 +215,20 @@ function velocity_donasi_rest_submit_pg($method, $post_id, $data) {
         ), 200);
     };
 
+    update_post_meta($post_id, 'metode_bayar', $method);
     if (!velocity_donasi_pg_is_available($method)) {
         return $fail('Payment Gateway tidak tersedia atau belum diaktifkan. Silakan coba metode lain.');
     }
-    // Nominal dihitung di browser: cek lagi di server (minimal sama dengan form).
-    if ((int) get_post_meta($post_id, 'totaldonasi', true) < 10000) {
-        return $fail('Nominal donasi minimal Rp10.000.');
+    // Nominal dihitung di browser: cek lagi di server dan simpan sebagai bilangan bulat.
+    $raw_total = trim((string) get_post_meta($post_id, 'totaldonasi', true));
+    $total     = ctype_digit($raw_total) ? (int) $raw_total : 0;
+    $max       = (int) apply_filters('velocity_donasi_pg_max_amount', 1000000000);
+    if ($total < 10000 || $total > $max) {
+        return $fail('Nominal donasi minimal Rp10.000 dan maksimal ' . DonasiCurrency($max) . '.');
+    }
+    update_post_meta($post_id, 'totaldonasi', (string) $total);
+    if (!is_email((string) get_post_meta($post_id, 'email_donatur', true))) {
+        return $fail('Alamat email tidak valid.');
     }
 
     $invoice = velocity_donasi_pg_unique_invoice($method, get_the_title($post_id), $post_id);
@@ -230,7 +238,9 @@ function velocity_donasi_rest_submit_pg($method, $post_id, $data) {
 
     $result = velocity_donasi_pg_create_payment($method, $post_id);
     if (is_wp_error($result)) {
-        return $fail('Gagal membuat pembayaran. ' . $result->get_error_message());
+        // Detail error tidak ditampilkan ke publik; disimpan di meta donasi untuk admin.
+        update_post_meta($post_id, 'pg_error', sanitize_text_field($result->get_error_message()));
+        return $fail('Gagal membuat pembayaran. Silakan coba lagi beberapa saat atau pilih metode lain.');
     }
     update_post_meta($post_id, 'status', 'Menunggu Pembayaran');
 
