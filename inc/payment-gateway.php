@@ -80,7 +80,7 @@ function velocity_donasi_pg_create_payment($method, $post_id) {
         'amount'      => $amount,
         'source'      => VELOCITY_DONASI_PG_SOURCE,
         'ref_id'      => (string) $post_id,
-        'return_url'  => velocity_donasi_invoice_url($invoice),
+        'return_url'  => velocity_donasi_invoice_url($invoice, $post_id),
         'description' => 'Donasi ' . $title,
         'customer'    => array(
             'id'    => (string) get_post_meta($post_id, 'user_id', true),
@@ -119,7 +119,7 @@ function velocity_donasi_pg_payment_link($post_id) {
     if ($url !== '' && ($expires_at === 0 || $expires_at > time() + 60)) {
         return $url;
     }
-    if (!in_array((string) get_post_meta($post_id, 'status', true), array('Pending', 'Menunggu Pembayaran'), true)) {
+    if (!velocity_donasi_pg_can_pay($post_id)) {
         return $url;
     }
 
@@ -135,8 +135,33 @@ function velocity_donasi_pg_payment_link($post_id) {
     }
 
     $result = velocity_donasi_pg_create_payment($method, $post_id);
+    if (is_wp_error($result)) {
+        return $result;
+    }
+    // Donasi Gagal karena link kedaluwarsa kembali menunggu pembayaran (invoice & transaksi yang sama).
+    update_post_meta($post_id, 'status', 'Menunggu Pembayaran');
 
-    return is_wp_error($result) ? $result : (string) $result['payment_url'];
+    return (string) $result['payment_url'];
+}
+
+/**
+ * Donasi DOKU masih bisa dibayar: Pending/Menunggu Pembayaran, atau Gagal karena tagihannya kedaluwarsa
+ * (bukan dibatalkan admin). Transaksi lunas tidak pernah dibuat ulang.
+ */
+function velocity_donasi_pg_can_pay($post_id) {
+    $method = (string) get_post_meta($post_id, 'metode_bayar', true);
+    $status = (string) get_post_meta($post_id, 'status', true);
+    if (!velocity_donasi_pg_handles($method)) {
+        return false;
+    }
+    if (in_array($status, array('Pending', 'Menunggu Pembayaran'), true)) {
+        return true;
+    }
+    if ($status !== 'Gagal' || !function_exists('vd_pg_get_transaction')) {
+        return false;
+    }
+    $transaction = vd_pg_get_transaction($method, get_the_title($post_id));
+    return $transaction && $transaction->status === 'expired' && $transaction->source === VELOCITY_DONASI_PG_SOURCE && (int) $transaction->ref_id === (int) $post_id;
 }
 
 /**
@@ -170,10 +195,54 @@ function velocity_donasi_pg_pay_button($post_id, $class = 'btn btn-sm btn-primar
     return '<a class="' . esc_attr($class) . '" href="' . esc_url($link) . '">Bayar via ' . esc_html($label) . '</a>';
 }
 
-function velocity_donasi_invoice_url($invoice) {
+/**
+ * Link halaman donatur untuk satu invoice. Dengan $post_id, link diberi token (t=) supaya penerima
+ * email/link bayar bisa melihat data dirinya utuh; tanpa token data donatur ditampilkan tersamar.
+ */
+function velocity_donasi_invoice_url($invoice, $post_id = 0) {
     $page_id  = velocitydonasi_option('halaman_donatur');
     $page_url = $page_id ? get_permalink($page_id) : get_home_url();
-    return add_query_arg('inv', rawurlencode((string) $invoice), $page_url);
+    $args     = array('inv' => rawurlencode((string) $invoice));
+    if ($post_id) {
+        $args['t'] = velocity_donasi_invoice_token($post_id);
+    }
+    return add_query_arg($args, $page_url);
+}
+
+function velocity_donasi_invoice_token($post_id) {
+    return substr(wp_hash('velocity-donasi-invoice|' . (int) $post_id . '|' . get_the_title($post_id)), 0, 20);
+}
+
+/** Data pribadi donatur boleh tampil utuh untuk admin, pemilik donasi (login), atau pemegang link bertoken. */
+function velocity_donasi_can_view_private($post_id) {
+    if (current_user_can('edit_post', $post_id)) {
+        return true;
+    }
+    $owner = (int) get_post_meta($post_id, 'user_id', true);
+    if ($owner > 0 && $owner === get_current_user_id()) {
+        return true;
+    }
+    $token = isset($_GET['t']) ? sanitize_text_field(wp_unslash($_GET['t'])) : '';
+    return $token !== '' && hash_equals(velocity_donasi_invoice_token($post_id), $token);
+}
+
+/** B*** S***, bu***@contoh.com, 0812****2222 */
+function velocity_donasi_mask($type, $value) {
+    $value = trim((string) $value);
+    if ($value === '') {
+        return '';
+    }
+    if ($type === 'email' && strpos($value, '@') !== false) {
+        list($user, $domain) = explode('@', $value, 2);
+        return mb_substr($user, 0, 2) . '***@' . $domain;
+    }
+    if ($type === 'phone') {
+        $digits = preg_replace('/\D+/', '', $value);
+        return strlen($digits) > 8 ? substr($digits, 0, 4) . str_repeat('*', strlen($digits) - 8) . substr($digits, -4) : '***';
+    }
+    return implode(' ', array_map(function ($word) {
+        return mb_substr($word, 0, 1) . '***';
+    }, preg_split('/\s+/', $value)));
 }
 
 /** Status dari vd-payment-gateway (notifikasi atau cek status) diteruskan ke donasi-masuk. */

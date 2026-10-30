@@ -145,7 +145,7 @@ function velocity_donasi_rest_submit(WP_REST_Request $request) {
         // Email dikirim ke donatur (Duitku)
         $page_id = velocitydonasi_option('halaman_donatur');
         $page_url = $page_id ? get_permalink($page_id) : get_home_url();
-        $invoice_url = add_query_arg('inv', $merchantOrderId, $page_url);
+        $invoice_url = velocity_donasi_invoice_url($merchantOrderId, $post_id);
 
         $body = '<html><body>';
         $body .= '<p>Detail donasi untuk '.get_the_title($data['post_id']).'.</p>';
@@ -256,7 +256,8 @@ function velocity_donasi_rest_submit_pg($method, $post_id, $data) {
     $body .= '<p>Detail donasi untuk ' . esc_html($campaign) . '.</p>';
     $body .= '<p>Silahkan selesaikan pembayaran sebesar <strong>' . $total . '</strong> melalui ' . esc_html($label) . '.</p>';
     $body .= '<p>Invoice: <strong>' . esc_html($invoice) . '</strong></p>';
-    $body .= '<p>Link pembayaran: <a href="' . esc_url(velocity_donasi_invoice_url($invoice)) . '">' . esc_html(velocity_donasi_invoice_url($invoice)) . '</a></p>';
+    $invoice_url = velocity_donasi_invoice_url($invoice, $post_id);
+    $body .= '<p>Link pembayaran: <a href="' . esc_url($invoice_url) . '">' . esc_html($invoice_url) . '</a></p>';
     $body .= get_home_url();
     $body .= '</body></html>';
 
