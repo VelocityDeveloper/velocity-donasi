@@ -144,17 +144,23 @@ function DaftarDonasiMasuk($post_id = null) {
     $nama_donatur = get_post_meta($post_id, 'nama_donatur', true);
     $email_donatur = get_post_meta($post_id, 'email_donatur', true);
     $hp_donatur = get_post_meta($post_id, 'hp_donatur', true);
+    // Lookup invoice bisa dibuka siapa saja yang tahu nomornya: tanpa hak/tautan bertoken, data pribadi disamarkan.
+    if (!velocity_donasi_can_view_private($post_id)) {
+        $nama_donatur = velocity_donasi_mask('name', $nama_donatur);
+        $email_donatur = velocity_donasi_mask('email', $email_donatur);
+        $hp_donatur = velocity_donasi_mask('phone', $hp_donatur);
+    }
     
     $icon = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" class="ms-1 bi bi-info-circle" viewBox="0 0 16 16">
     <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
     <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0"/>
   </svg>';
     echo '<tr>';
-        echo '<td><a data-bs-toggle="collapse" href="#donasimasuk'.$post_id.'" role="button" aria-expanded="false" aria-controls="donasimasuk'.$post_id.'">'.get_the_title($post_id).' '.$icon.'</a></td>';
-        echo '<td><a href="'.get_the_permalink($donasi_id).'" target="_blank">'.get_the_title($donasi_id).'</a></td>';
+        echo '<td><a data-bs-toggle="collapse" href="#donasimasuk'.$post_id.'" role="button" aria-expanded="false" aria-controls="donasimasuk'.$post_id.'">'.esc_html(get_the_title($post_id)).' '.$icon.'</a></td>';
+        echo '<td><a href="'.esc_url(get_the_permalink($donasi_id)).'" target="_blank">'.esc_html(get_the_title($donasi_id)).'</a></td>';
         echo '<td>'.DonasiCurrency($total_donasi).'</td>';
         $status_ini = $status_donasi == 'Butuh Konfirmasi' ? 'Sedang Diproses' : $status_donasi;
-        echo '<td>'.$status_ini.'</td>';
+        echo '<td>'.esc_html($status_ini).'</td>';
         echo '<td>'.$tanggal.'</td>';
     echo '</tr>';
     echo '<tr class="collapse" id="donasimasuk'.$post_id.'">';
@@ -162,26 +168,30 @@ function DaftarDonasiMasuk($post_id = null) {
             echo '<div class="row mx-0 mb-3">';
                 echo '<div class="col-md-6 ps-0 mb-1">';
                     echo '<div class="fw-bold mb-2">Data Diri</div>';
-                    echo '<div class="mb-2">Nama Donatur: '.$nama_donatur.'</div>';
-                    echo '<div class="mb-2">Email Donatur: '.$email_donatur.'</div>';
-                    echo '<div class="mb-2">No. Telp: '.$hp_donatur.'</div>';
+                    echo '<div class="mb-2">Nama Donatur: '.esc_html($nama_donatur).'</div>';
+                    echo '<div class="mb-2">Email Donatur: '.esc_html($email_donatur).'</div>';
+                    echo '<div class="mb-2">No. Telp: '.esc_html($hp_donatur).'</div>';
                 echo '</div>';
                 echo '<div class="col-md-6 pe-0 ps-0 ps-md-2">';
-                    echo '<div class="fw-bold mb-2">Metode Pembayaran: <span class="text-uppercase">'.$metode_bayar.'</span></div>';
+                    echo '<div class="fw-bold mb-2">Metode Pembayaran: <span class="text-uppercase">'.esc_html($metode_bayar).'</span></div>';
                     if($metode_bayar == 'bank'){
                         echo '<div class="mt-2">';
-                            $bankdonasi = getBankDonasi($bank);
+                            $bankdonasi = array_merge(array('logo' => '', 'nobank' => '', 'atasnama' => ''), (array) getBankDonasi($bank));
                             if($bankdonasi['logo']){
-                                echo '<img class="w-auto" src="'.$bankdonasi['logo'].'" alt="'.$bank.'" style="max-height: 48px;">';
+                                echo '<img class="w-auto" src="'.esc_url($bankdonasi['logo']).'" alt="'.esc_attr($bank).'" style="max-height: 48px;">';
                             } else {
-                                echo '<strong class="text-uppercase">'.$bank.': </strong>';
+                                echo '<strong class="text-uppercase">'.esc_html($bank).': </strong>';
                             }
-                            echo $bankdonasi['nobank'].' a/n '.$bankdonasi['atasnama'];
+                            echo esc_html($bankdonasi['nobank'].' a/n '.$bankdonasi['atasnama']);
                         echo '</div>';
+                    } elseif (velocity_donasi_pg_handles($metode_bayar)) {
+                        if (velocity_donasi_pg_can_pay($post_id) && velocity_donasi_pg_is_available($metode_bayar)) {
+                            echo '<div class="mt-2">'.velocity_donasi_pg_pay_button($post_id).'</div>';
+                        }
                     } elseif ($metode_bayar == 'duitku') {
                         if (velocity_donasi_is_duitku_ready()) {
                             $invoice = get_the_title($post_id);
-                            $payment_button = do_shortcode('[tombol_bayar_duitku invoice="'.$invoice.'" class="btn btn-sm btn-primary mt-2"]');
+                            $payment_button = do_shortcode('[tombol_bayar_duitku invoice="'.esc_attr($invoice).'" class="btn btn-sm btn-primary mt-2"]');
                             echo '<div class="mt-2">'.$payment_button.'</div>';
                         }
                     }
@@ -189,7 +199,7 @@ function DaftarDonasiMasuk($post_id = null) {
                         if(has_post_thumbnail($post_id)){
                             $thumbnail_url = get_the_post_thumbnail_url($post_id, 'full');
                             echo '<a class="px-3 btn btn-sm btn-primary" href="'.$thumbnail_url.'" target="_blank">Bukti Transfer</a>';
-                        } elseif($status_donasi == 'Pending' && !($metode_bayar == 'duitku' && velocity_donasi_is_duitku_ready())){
+                        } elseif($status_donasi == 'Pending' && !($metode_bayar == 'duitku' && velocity_donasi_is_duitku_ready()) && !velocity_donasi_pg_handles($metode_bayar)){
                             echo '<a class="px-3 btn btn-sm btn-success" href="?act=konfirmasi&id='.$post_id.'" target="_blank">Konfirmasi</a>';
                         }
                     echo '</div>';
@@ -461,12 +471,28 @@ function velocity_donasi_duitku_callback_handler($payload) {
     $payment_code = isset($payload['paymentCode']) ? sanitize_text_field($payload['paymentCode']) : '';
     $amount = isset($payload['amount']) ? sanitize_text_field($payload['amount']) : '';
 
-    $donasi = get_page_by_title($invoice, OBJECT, 'donasi-masuk');
+    $donasi = velocity_donasi_find_by_invoice($invoice, 'duitku');
     if (!$donasi) {
         return;
     }
 
-    $status = $result_code === '00' ? 'Sukses' : 'Pending';
+    $current = get_post_meta($donasi->ID, 'status', true);
+    if ($result_code === '00') {
+        $total = (int) get_post_meta($donasi->ID, 'totaldonasi', true);
+        if ($amount !== '' && (int) $amount !== $total) {
+            // Nominal tidak sama dengan donasi: jangan tandai Sukses, catat untuk admin.
+            update_post_meta($donasi->ID, 'duitku_amount', $amount);
+            error_log(sprintf('[velocity-donasi] callback Duitku %s: nominal %d tidak sama dengan donasi %d', $invoice, (int) $amount, $total));
+            return;
+        }
+        $status = 'Sukses';
+    } else {
+        // Callback gagal/terlambat tidak menurunkan donasi yang sudah Sukses.
+        if ($current === 'Sukses') {
+            return;
+        }
+        $status = 'Pending';
+    }
 
     update_post_meta($donasi->ID, 'status', $status);
     update_post_meta($donasi->ID, 'duitku_reference', $reference);

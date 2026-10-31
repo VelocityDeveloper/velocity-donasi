@@ -1,7 +1,7 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) exit;
-$act    = isset($_GET['act']) ? $_GET['act'] : '';
-$id     = isset($_GET['id']) ? $_GET['id'] : '';
+$act    = isset($_GET['act']) ? sanitize_key(wp_unslash($_GET['act'])) : '';
+$id     = isset($_GET['id']) ? absint($_GET['id']) : 0;
 $donasi_id = get_post_meta($id, 'donasi_id', true);
 $check = velocity_donasi_validate_recaptcha();
 

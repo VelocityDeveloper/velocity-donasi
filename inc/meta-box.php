@@ -105,7 +105,7 @@ function velocity_donasi_meta_schema() {
                 'name'    => 'metode_bayar',
                 'label'   => 'Metode Pembayaran',
                 'default' => '',
-                'placeholder' => 'bank / duitku',
+                'placeholder' => 'bank / duitku / doku',
                 'required' => true,
                 'readonly' => true,
             ],

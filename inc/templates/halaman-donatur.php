@@ -2,7 +2,7 @@
 if ( ! defined( 'ABSPATH' ) ) exit;
 $act        = isset($_GET['act']) ? $_GET['act'] : '';
 $id        = isset($_GET['id']) ? $_GET['id'] : '';
-$inv        = isset($_GET['inv']) ? $_GET['inv'] : '';
+$inv        = isset($_GET['inv']) ? sanitize_text_field(wp_unslash($_GET['inv'])) : '';
 $gresponse  = isset($_GET['g-recaptcha-response']) ? $_GET['g-recaptcha-response'] : '';
 
 
@@ -73,7 +73,7 @@ if($act == 'konfirmasi' && $id && !has_post_thumbnail($id) && get_post($id)){
                 echo '</div>';
             echo '</div>';
         } else {
-            echo '<div class="alert alert-warning">Tidak ada data yang ditemukan untuk invoice <strong>'.$inv.'</strong>.</div>';
+            echo '<div class="alert alert-warning">Tidak ada data yang ditemukan untuk invoice <strong>'.esc_html($inv).'</strong>.</div>';
         }
     } elseif ($inv) {        
         echo '<div class="alert alert-warning">Isikan captcha.</div>';
